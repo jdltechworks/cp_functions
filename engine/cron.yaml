@@ -1,0 +1,4 @@
+cron:
+- description: Update item and project states
+  url: /publish/project_item_update
+  schedule: every 1 hours
