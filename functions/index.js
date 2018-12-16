@@ -11,6 +11,6 @@ routes(app);
 
 exports.api = functions.https.onRequest(app);
 
-exports.minute_job = functions.pubsub
+exports.schedule_tasks = functions.pubsub
   .topic('project_item_update')
   .onPublish((message) => tasks(message));

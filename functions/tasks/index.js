@@ -39,7 +39,7 @@ const setProjectItemState = async (message)  => {
     };
     
     switch (true) {
-      case deleted_at === undefined && checkedOut(startDate, endDate):
+      case deleted_at === undefined && checkedOut(startDate, endDate): {
         const checkedOutItems = child.val().items;
         projectsDb
           .child(child.key)
@@ -47,13 +47,17 @@ const setProjectItemState = async (message)  => {
           .set('CHECKED_OUT');
         checkedOutItems && Object.keys(checkedOutItems).map(async id => {
             const currValue = await db.ref(`items/${id}`).once('value');
-            await db.ref(`items/${id}`).set({
+            db.ref(`items/${id}`).set({
               ...currValue.val(),
               ...itemValues
             });
+            
+            db.ref(`items/${id}`).child('projects').child(child.key).set(true)
         });
         break;
-      case deleted_at === undefined && checkedIn(endDate):
+      }
+
+      case deleted_at === undefined && checkedIn(endDate): {
         const checkedInItems = child.val().items;
         projectsDb
           .child(child.key)
@@ -65,9 +69,13 @@ const setProjectItemState = async (message)  => {
               ...currValue.val(),
               ...itemValues
             });
+
+            db.ref(`items/${id}`).child('projects').child(child.key).set(true);
         });
         break;
-      case deleted_at === undefined && onHold(startDate):
+      }
+
+      case deleted_at === undefined && onHold(startDate): {
         const onHoldItems = child.val().items;
         projectsDb
           .child(child.key)
@@ -80,9 +88,12 @@ const setProjectItemState = async (message)  => {
               ...currValue.val(),
               ...itemValues
             });
+            db.ref(`items/${id}`).child('projects').child(child.key).set(true);
         });
-          break;
-      case deleted_at !== undefined:
+        break;
+      }
+
+      case deleted_at !== undefined: {
         projectsDb
           .child(child.key)
           .child('status')
@@ -92,15 +103,20 @@ const setProjectItemState = async (message)  => {
         resetItems && Object.keys(resetItems).map(async id => {
           const itemDetails = await db.ref(`items/${id}`).once('value');
           const { projectsCount, itemCount } = itemDetails.val();
-          const curr_count = projectsCount ? Number(projectCount) : 0;
+          const curr_count = projectsCount ? Number(projectsCount) : 0;
           const curr_itemcount = itemCount ? Number(itemCount): 0;
           db.ref(`items/${id}`).child('itemCount').set(curr_count + curr_itemcount);
           db.ref(`items/${id}`).child('projectsCount').set(0);
-
+          db.ref(`items/${id}`).child('projects').child(child.key).set(null);
         });
         break;
-      default: return null
+      }
+
+      default: {
+        return
+      }
     }
+    return
   });
 }
 

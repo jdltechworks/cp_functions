@@ -1,4 +1,4 @@
 cron:
 - description: Update item and project states
   url: /publish/project_item_update
-  schedule: every 2 hours
+  schedule: every 12 hours

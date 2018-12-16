@@ -1,3 +1,3 @@
 const api = require('./api');
 
-module.exports = (app) => api(app)
+module.exports = (app) => api(app);
