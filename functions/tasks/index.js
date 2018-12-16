@@ -11,6 +11,7 @@ const projectsQuery = async () => {
     .once('value', async (snap) => await snap.val());
   return result;
 }
+
 const checkedOut = (startDate, endDate) => {
   return (new Date() >= new Date(startDate) && new Date() <= new Date(endDate))
 }
@@ -21,12 +22,12 @@ const checkedIn = (endDate) => (new Date() > new Date(endDate))
 const onHold = (startDate) => (new Date() < new Date(startDate))
 
 const setProjectItemState = async (message)  => {
-  console.log(message);
+  console.log(message)
   const project = await projectsQuery()
   const getProjects = project;
   
   await getProjects.forEach(child => {
-    const { name, deleted_at, items, startDate, endDate, street, suburb, status, } = child.val()
+    const { name, deleted_at, startDate, endDate, street, suburb, status, } = child.val()
     
     const itemValues= {
       project_name: name,
@@ -34,17 +35,17 @@ const setProjectItemState = async (message)  => {
       suburb,
       status,
       startDate,
-      endDate
+      endDate,
     };
-
+    
     switch (true) {
       case deleted_at === undefined && checkedOut(startDate, endDate):
+        const checkedOutItems = child.val().items;
         projectsDb
           .child(child.key)
           .child('status')
           .set('CHECKED_OUT');
-        Object.keys(items)
-          .map(async id => {
+        checkedOutItems && Object.keys(checkedOutItems).map(async id => {
             const currValue = await db.ref(`items/${id}`).once('value');
             await db.ref(`items/${id}`).set({
               ...currValue.val(),
@@ -53,12 +54,12 @@ const setProjectItemState = async (message)  => {
         });
         break;
       case deleted_at === undefined && checkedIn(endDate):
+        const checkedInItems = child.val().items;
         projectsDb
           .child(child.key)
           .child('status')
           .set('CHECKED_IN');
-        Object.keys(items)
-          .map(async id => {
+        checkedInItems && Object.keys(checkedInItems).map(async id => {
             const currValue = await db.ref(`items/${id}`).once('value');
             await db.ref(`items/${id}`).set({
               ...currValue.val(),
@@ -67,11 +68,12 @@ const setProjectItemState = async (message)  => {
         });
         break;
       case deleted_at === undefined && onHold(startDate):
+        const onHoldItems = child.val().items;
         projectsDb
           .child(child.key)
           .child('status')
           .set('ON_HOLD');
-        Object.keys(items)
+          onHoldItems && Object.keys(onHoldItems)
           .map(async id => {
             const currValue = await db.ref(`items/${id}`).once('value');
             await db.ref(`items/${id}`).set({
@@ -85,16 +87,16 @@ const setProjectItemState = async (message)  => {
           .child(child.key)
           .child('status')
           .set('ARCHIVED');
-        const project = db.ref(`projects/${child.key}`).once('value');
-        const { items } = project.val();
-
-        Object.keys(items).map(async id => {
+        const resetItems = child.val().items
+        
+        resetItems && Object.keys(resetItems).map(async id => {
           const itemDetails = await db.ref(`items/${id}`).once('value');
-          const { project_count, item_count } = itemDetails.val();
-          db.ref(`items/${id}`).set({
-            item_count: project_count + item_count,
-            project_count: 0,
-          });
+          const { projectsCount, itemCount } = itemDetails.val();
+          const curr_count = projectsCount ? Number(projectCount) : 0;
+          const curr_itemcount = itemCount ? Number(itemCount): 0;
+          db.ref(`items/${id}`).child('itemCount').set(curr_count + curr_itemcount);
+          db.ref(`items/${id}`).child('projectsCount').set(0);
+
         });
         break;
       default: return null
